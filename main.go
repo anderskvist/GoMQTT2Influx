@@ -47,12 +47,17 @@ func MonitorMQTT(cfg *ini.File) {
 		log.Fatal(err)
 	}
 
+	subtopic := cfg.Section("mqtt").Key("subtopic").String()
+	if subtopic == "" {
+		log.Fatal("Topic to subscribe to is missing in configuration")
+	}
+
 	if subConnection == nil {
 		subConnection = connect("MQTT2Influx", uri)
 		log.Debug("Connecting to MQTT (sub)")
 	}
 
-	subConnection.Subscribe("home/#", 0, func(client mqtt.Client, msg mqtt.Message) {
+	subConnection.Subscribe(subtopic+"/#", 0, func(client mqtt.Client, msg mqtt.Message) {
 		topic := msg.Topic()
 		payload := msg.Payload()
 
