@@ -52,6 +52,11 @@ func MonitorMQTT(cfg *ini.File) {
 		log.Fatal("Topic to subscribe to is missing in configuration")
 	}
 
+	parser := cfg.Section("mqtt").Key("parser").String()
+	if parser == "" {
+		log.Fatal("Parser missing in configuration")
+	}
+
 	if subConnection == nil {
 		subConnection = connect("MQTT2Influx", uri)
 		log.Debug("Connecting to MQTT (sub)")
@@ -62,7 +67,17 @@ func MonitorMQTT(cfg *ini.File) {
 		payload := msg.Payload()
 
 		log.Noticef("[%s] %s\n", topic, string(payload))
+
+		switch parser {
+		case "xiaomi":
+			parseXiaomi(topic, payload)
+		}
 	})
+}
+
+// output from aqara-mqtt (https://github.com/monster1025/aqara-mqtt)
+func parseXiaomi(topic string, payload []byte) {
+	// prefix / xiaomi type / id / sensor
 }
 
 func main() {
