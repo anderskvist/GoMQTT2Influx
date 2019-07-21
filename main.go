@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"sync"
 	"time"
 
@@ -77,7 +78,16 @@ func MonitorMQTT(cfg *ini.File) {
 
 // output from aqara-mqtt (https://github.com/monster1025/aqara-mqtt)
 func parseXiaomi(topic string, payload []byte) {
-	// prefix / xiaomi type / id / sensor
+	r := regexp.MustCompile(`^(?P<prefix>[a-zA-Z0-9]*)/(?P<type>[a-zA-Z0-9_\.]*)/(?P<id>[a-zA-Z0-9]*)/(?P<sensor>[a-zA-Z0-9]*)`)
+	matches := r.FindStringSubmatch(topic)
+
+	tags := map[string]string{
+		"type":   matches[2],
+		"id":     matches[3],
+		"sensor": matches[4]}
+
+	fmt.Printf("%#v\n", tags)
+
 }
 
 func main() {
