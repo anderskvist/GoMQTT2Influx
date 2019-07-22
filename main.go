@@ -79,7 +79,7 @@ func MonitorMQTT(cfg *ini.File) {
 		topic := msg.Topic()
 		payload := msg.Payload()
 
-		log.Noticef("[%s] %s\n", topic, string(payload))
+		log.Debugf("[%s] %s\n", topic, string(payload))
 
 		switch parser {
 		case "xiaomi":
