@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,9 +50,19 @@ func MonitorMQTT(cfg *ini.File) {
 		log.Fatal(err)
 	}
 
-	subtopic := cfg.Section("mqtt").Key("subtopic").String()
-	if subtopic == "" {
-		log.Fatal("Topic to subscribe to is missing in configuration")
+	topic := cfg.Section("mqtt").Key("topic").String()
+	if topic == "" {
+		log.Fatal("topic to subscribe to is missing in configuration")
+	}
+
+	topicsMap := make(map[string]byte)
+	topics := strings.Split(topic, ",")
+	for i := range topics {
+		topicsMap[topics[i]+"/#"] = 0 // QoS
+	}
+
+	for t := range topicsMap {
+		log.Debugf("Subscribing to %s", t)
 	}
 
 	parser := cfg.Section("mqtt").Key("parser").String()
@@ -64,7 +75,7 @@ func MonitorMQTT(cfg *ini.File) {
 		log.Debug("Connecting to MQTT (sub)")
 	}
 
-	subConnection.Subscribe(subtopic+"/#", 0, func(client mqtt.Client, msg mqtt.Message) {
+	subConnection.SubscribeMultiple(topicsMap, func(client mqtt.Client, msg mqtt.Message) {
 		topic := msg.Topic()
 		payload := msg.Payload()
 
@@ -76,7 +87,6 @@ func MonitorMQTT(cfg *ini.File) {
 		case "sonoffPowR2":
 			parseSonoffPowR2(topic, payload)
 		default:
-			log.Fatalf("Unknown parser: %s", parser)
 		}
 	})
 }
