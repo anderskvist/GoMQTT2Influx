@@ -172,7 +172,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Infof("DVIEnergiSmartControl version: %s.\n", version.Version)
+	log.Infof("GoMQTT2Influx version: %s.\n", version.Version)
 
 	influxconfig := false
 	mqttconfig := false
