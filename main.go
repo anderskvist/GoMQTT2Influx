@@ -14,10 +14,13 @@ import (
 	"github.com/anderskvist/GoHelpers/version"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	influx "github.com/influxdata/influxdb1-client/v2"
 	ini "gopkg.in/ini.v1"
 )
 
 var subConnection mqtt.Client
+var influxClient influx.Client
+var influxBatchPoint influx.BatchPoints
 
 func connect(clientID string, uri *url.URL) mqtt.Client {
 	opts := createClientOptions(clientID, uri)
@@ -116,6 +119,25 @@ func parseSonoffPowR2(topic string, payload []byte) {
 	log.Noticef("%s voltage: %f\n", sensor, energyMap["Voltage"])
 	log.Noticef("%s power: %f\n", sensor, energyMap["Power"])
 	log.Noticef("%s current: %f\n", sensor, energyMap["Current"])
+
+	tags := map[string]string{
+		"name": sensor}
+
+	data := map[string]interface{}{
+		"voltage": energyMap["Voltage"].(float64),
+		"power":   energyMap["Power"].(float64),
+		"current": energyMap["Current"].(float64)}
+
+	point, _ := influx.NewPoint(
+		"sonoffPowR2",
+		tags,
+		data,
+		time.Now(),
+	)
+	influxBatchPoint.AddPoint(point)
+	if err := influxClient.Write(influxBatchPoint); err != nil {
+		log.Noticef("Error writing to influx: %s", err)
+	}
 }
 
 func main() {
@@ -139,6 +161,17 @@ func main() {
 		log.Info("Activating MQTT plugin")
 		mqttconfig = true
 	}
+
+	influxClient, err = influx.NewHTTPClient(influx.HTTPConfig{
+		Addr:     cfg.Section("influxdb").Key("url").String(),
+		Username: cfg.Section("influxdb").Key("username").String(),
+		Password: cfg.Section("influxdb").Key("password").String(),
+	})
+
+	influxBatchPoint, err = influx.NewBatchPoints(influx.BatchPointsConfig{
+		Database:  cfg.Section("influxdb").Key("database").String(),
+		Precision: "s",
+	})
 
 	var wg sync.WaitGroup
 	wg.Add(1)
