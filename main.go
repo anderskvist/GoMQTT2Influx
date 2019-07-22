@@ -105,6 +105,25 @@ func parseXiaomi(topic string, payload []byte) {
 		"sensor": matches[4]}
 
 	log.Noticef("xiaomi type:%s id:%s sensor:%s - value:%s", tags["type"], tags["id"], tags["sensor"], payload)
+
+	data := map[string]interface{}{
+		"value": payload}
+
+	point, _ := influx.NewPoint(
+		"xiaomi",
+		tags,
+		data,
+		time.Now(),
+	)
+	influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+		Database:  cfg.Section("influxdb").Key("database").String(),
+		Precision: "s",
+	})
+	influxBatchPoint.AddPoint(point)
+	if err := influxClient.Write(influxBatchPoint); err != nil {
+		log.Noticef("Error writing to influx: %s", err)
+	}
+
 }
 
 func parseSonoffPowR2(topic string, payload []byte) {
