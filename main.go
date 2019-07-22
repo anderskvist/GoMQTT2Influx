@@ -20,7 +20,7 @@ import (
 
 var subConnection mqtt.Client
 var influxClient influx.Client
-var influxBatchPoint influx.BatchPoints
+var cfg *ini.File
 
 func connect(clientID string, uri *url.URL) mqtt.Client {
 	opts := createClientOptions(clientID, uri)
@@ -46,7 +46,7 @@ func createClientOptions(clientID string, uri *url.URL) *mqtt.ClientOptions {
 }
 
 // MonitorMQTT will monitor MQTT for changes
-func MonitorMQTT(cfg *ini.File) {
+func MonitorMQTT() {
 	mqttURL := cfg.Section("mqtt").Key("url").String()
 	uri, err := url.Parse(mqttURL)
 	if err != nil {
@@ -134,6 +134,10 @@ func parseSonoffPowR2(topic string, payload []byte) {
 		data,
 		time.Now(),
 	)
+	influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+		Database:  cfg.Section("influxdb").Key("database").String(),
+		Precision: "s",
+	})
 	influxBatchPoint.AddPoint(point)
 	if err := influxClient.Write(influxBatchPoint); err != nil {
 		log.Noticef("Error writing to influx: %s", err)
@@ -162,15 +166,11 @@ func main() {
 		mqttconfig = true
 	}
 
-	influxClient, err = influx.NewHTTPClient(influx.HTTPConfig{
+	log.Info("Connecting to influxDB")
+	influxClient, _ = influx.NewHTTPClient(influx.HTTPConfig{
 		Addr:     cfg.Section("influxdb").Key("url").String(),
 		Username: cfg.Section("influxdb").Key("username").String(),
 		Password: cfg.Section("influxdb").Key("password").String(),
-	})
-
-	influxBatchPoint, err = influx.NewBatchPoints(influx.BatchPointsConfig{
-		Database:  cfg.Section("influxdb").Key("database").String(),
-		Precision: "s",
 	})
 
 	var wg sync.WaitGroup
@@ -179,7 +179,7 @@ func main() {
 	if mqttconfig {
 		defer wg.Done()
 
-		go MonitorMQTT(cfg)
+		go MonitorMQTT()
 	}
 
 	if influxconfig {
