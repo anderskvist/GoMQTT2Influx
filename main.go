@@ -101,7 +101,7 @@ func parseXiaomi(topic string, payload []byte) {
 		"id":     matches[3],
 		"sensor": matches[4]}
 
-	fmt.Printf("%#v\n", tags)
+	log.Noticef("xiaomi type:%s id:%s sensor:%s - value:%s", tags["type"], tags["id"], tags["sensor"], payload)
 }
 
 func parseSonoffPowR2(topic string, payload []byte) {
@@ -113,9 +113,9 @@ func parseSonoffPowR2(topic string, payload []byte) {
 	json.Unmarshal(payload, &payloadMap)
 	energyMap := payloadMap["ENERGY"].(map[string]interface{})
 
-	log.Debugf("%s voltage: %f\n", sensor, energyMap["Voltage"])
-	log.Debugf("%s power: %f\n", sensor, energyMap["Power"])
-	log.Debugf("%s current: %f\n", sensor, energyMap["Current"])
+	log.Noticef("%s voltage: %f\n", sensor, energyMap["Voltage"])
+	log.Noticef("%s power: %f\n", sensor, energyMap["Power"])
+	log.Noticef("%s current: %f\n", sensor, energyMap["Current"])
 }
 
 func main() {
