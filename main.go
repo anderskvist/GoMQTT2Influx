@@ -140,7 +140,7 @@ func parseSonoffPowR2(topic string, payload []byte) {
 	log.Noticef("%s current: %f\n", sensor, energyMap["Current"])
 
 	tags := map[string]string{
-		"value": sensor}
+		"name": sensor}
 
 	data := map[string]interface{}{
 		"voltage": energyMap["Voltage"].(float64),
