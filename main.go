@@ -145,7 +145,8 @@ func parseSonoffPowR2(topic string, payload []byte) {
 }
 
 func main() {
-	cfg, err := ini.Load(os.Args[1])
+	var err error
+	cfg, err = ini.Load(os.Args[1])
 
 	if err != nil {
 		log.Criticalf("Fail to read file: %v", err)
