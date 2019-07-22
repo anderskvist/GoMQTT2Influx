@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -72,6 +73,10 @@ func MonitorMQTT(cfg *ini.File) {
 		switch parser {
 		case "xiaomi":
 			parseXiaomi(topic, payload)
+		case "sonoffPowR2":
+			parseSonoffPowR2(topic, payload)
+		default:
+			log.Fatalf("Unknown parser: %s", parser)
 		}
 	})
 }
@@ -87,7 +92,20 @@ func parseXiaomi(topic string, payload []byte) {
 		"sensor": matches[4]}
 
 	fmt.Printf("%#v\n", tags)
+}
 
+func parseSonoffPowR2(topic string, payload []byte) {
+	r := regexp.MustCompile(`^(?P<prefix>[a-zA-Z0-9]*)/.*`)
+	matches := r.FindStringSubmatch(topic)
+	sensor := matches[1]
+
+	var payloadMap map[string]interface{}
+	json.Unmarshal(payload, &payloadMap)
+	energyMap := payloadMap["ENERGY"].(map[string]interface{})
+
+	log.Debugf("%s voltage: %f\n", sensor, energyMap["Voltage"])
+	log.Debugf("%s power: %f\n", sensor, energyMap["Power"])
+	log.Debugf("%s current: %f\n", sensor, energyMap["Current"])
 }
 
 func main() {
