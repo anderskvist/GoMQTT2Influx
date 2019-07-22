@@ -160,17 +160,24 @@ func parseSonoffPowR2(topic string, payload []byte) {
 	json.Unmarshal(payload, &payloadMap)
 	energyMap := payloadMap["ENERGY"].(map[string]interface{})
 
-	log.Noticef("%s voltage: %f\n", sensor, energyMap["Voltage"])
-	log.Noticef("%s power: %f\n", sensor, energyMap["Power"])
-	log.Noticef("%s current: %f\n", sensor, energyMap["Current"])
-
 	tags := map[string]string{
 		"name": sensor}
 
 	data := map[string]interface{}{
-		"voltage": energyMap["Voltage"].(float64),
-		"power":   energyMap["Power"].(float64),
-		"current": energyMap["Current"].(float64)}
+		"total":         energyMap["Total"].(float64),
+		"yesterday":     energyMap["Yesterday"].(float64),
+		"today":         energyMap["Today"].(float64),
+		"period":        energyMap["Period"].(float64),
+		"power":         energyMap["Power"].(float64),
+		"apparentpower": energyMap["ApparentPower"].(float64),
+		"reactivepower": energyMap["ReactivePower"].(float64),
+		"factor":        energyMap["Factor"].(float64),
+		"voltage":       energyMap["Voltage"].(float64),
+		"current":       energyMap["Current"].(float64)}
+
+	for k, v := range data {
+		log.Noticef("%s %s: %f\n", sensor, k, v)
+	}
 
 	point, _ := influx.NewPoint(
 		"sonoffPowR2",
