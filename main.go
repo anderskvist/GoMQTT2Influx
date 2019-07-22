@@ -106,8 +106,33 @@ func parseXiaomi(topic string, payload []byte) {
 
 	log.Noticef("xiaomi type:%s id:%s sensor:%s - value:%s", tags["type"], tags["id"], tags["sensor"], payload)
 
-	data := map[string]interface{}{
-		"value": payload}
+	data := map[string]interface{}{}
+
+	if tags["type"] == "magnet" && tags["sensor"] == "status" {
+		tags["raw"] = string(payload)
+		if string(payload) == "close" {
+			data["value"] = 1.0
+		} else if string(payload) == "open" {
+			data["value"] = 0.0
+		} else {
+			data["value"] = -1.0
+		}
+	} else if tags["type"] == "motion" && tags["sensor"] == "status" {
+		tags["raw"] = string(payload)
+		if string(payload) == "motion" {
+			data["value"] = 1.0
+		} else if string(payload) == "no_motion" {
+			data["value"] = 0.0
+		} else {
+			data["value"] = -1.0
+		}
+	} else if tags["type"] == "sensor_switch.aq2" && tags["sensor"] == "status" {
+		// FIXME
+	} else if tags["type"] == "gateway" && tags["sensor"] == "rgb" {
+		// FIXME
+	} else {
+		data["value"] = payload
+	}
 
 	point, _ := influx.NewPoint(
 		"xiaomi",
