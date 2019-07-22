@@ -74,7 +74,7 @@ func MonitorMQTT() {
 	}
 
 	if subConnection == nil {
-		subConnection = connect("MQTT2Influx", uri)
+		subConnection = connect("MQTT2Influx-"+parser, uri)
 		log.Debug("Connecting to MQTT (sub)")
 	}
 
