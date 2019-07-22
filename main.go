@@ -89,9 +89,41 @@ func MonitorMQTT() {
 			parseXiaomi(topic, payload)
 		case "sonoffPowR2":
 			parseSonoffPowR2(topic, payload)
+		case "nilan":
+			parseNilan(topic, payload)
 		default:
 		}
 	})
+}
+
+// output from https://github.com/jascdk/Nilan_Homeassistant
+func parseNilan(topic string, payload []byte) {
+	r := regexp.MustCompile(`^[a-zA-Z0-9]*/(?P<group>[a-zA-Z0-9]*)/(?P<name>[a-zA-Z0-9_/]*)`)
+	matches := r.FindStringSubmatch(topic)
+
+	if len(matches) > 2 {
+		tags := map[string]string{
+			"group": matches[1],
+			"name":  matches[2]}
+
+		data := map[string]interface{}{
+			"value": payload}
+
+		point, _ := influx.NewPoint(
+			"nilan",
+			tags,
+			data,
+			time.Now(),
+		)
+		influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+			Database:  cfg.Section("influxdb").Key("database").String(),
+			Precision: "s",
+		})
+		influxBatchPoint.AddPoint(point)
+		if err := influxClient.Write(influxBatchPoint); err != nil {
+			log.Noticef("Error writing to influx: %s", err)
+		}
+	}
 }
 
 // output from aqara-mqtt (https://github.com/monster1025/aqara-mqtt)
