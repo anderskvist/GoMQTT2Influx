@@ -143,9 +143,9 @@ func parseXiaomi(topic string, payload []byte) {
 	if tags["type"] == "magnet" && tags["sensor"] == "status" {
 		tags["raw"] = string(payload)
 		if string(payload) == "close" {
-			data["value"] = 1.0
-		} else if string(payload) == "open" {
 			data["value"] = 0.0
+		} else if string(payload) == "open" {
+			data["value"] = 1.0
 		} else {
 			data["value"] = -1.0
 		}
