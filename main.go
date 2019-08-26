@@ -202,7 +202,6 @@ func parseSonoffPowR2(topic string, payload []byte) {
 		"total":         energyMap["Total"].(float64),
 		"yesterday":     energyMap["Yesterday"].(float64),
 		"today":         energyMap["Today"].(float64),
-		"period":        energyMap["Period"].(float64),
 		"power":         energyMap["Power"].(float64),
 		"apparentpower": energyMap["ApparentPower"].(float64),
 		"reactivepower": energyMap["ReactivePower"].(float64),
