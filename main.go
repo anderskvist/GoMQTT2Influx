@@ -12,6 +12,7 @@ import (
 
 	"github.com/anderskvist/GoHelpers/log"
 	"github.com/anderskvist/GoHelpers/version"
+	"github.com/anderskvist/GoHelpers/watchdog"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	influx "github.com/influxdata/influxdb1-client/v2"
@@ -21,6 +22,7 @@ import (
 var subConnection mqtt.Client
 var influxClient influx.Client
 var cfg *ini.File
+var watchDogTimer time.Time
 
 func connect(clientID string, uri *url.URL) mqtt.Client {
 	opts := createClientOptions(clientID, uri)
@@ -93,6 +95,7 @@ func MonitorMQTT() {
 			parseNilan(topic, payload)
 		default:
 		}
+		watchdog.Poke()
 	})
 }
 
@@ -262,12 +265,13 @@ func main() {
 
 	if mqttconfig {
 		defer wg.Done()
-
 		go MonitorMQTT()
 	}
 
 	if influxconfig {
 	}
+
+	go watchdog.Activate(cfg.Section("watchdog").Key("interval").MustInt(300))
 
 	wg.Wait()
 }
