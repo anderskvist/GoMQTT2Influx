@@ -105,6 +105,12 @@ func parseNilan(topic string, payload []byte) {
 	matches := r.FindStringSubmatch(topic)
 
 	if len(matches) > 2 {
+		// skip if we get a text as influxdb cannot handle it
+		if matches[1] == "text" {
+			log.Debug("Skipping text")
+			return
+		}
+
 		tags := map[string]string{
 			"group": matches[1],
 			"name":  matches[2]}
