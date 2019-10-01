@@ -116,7 +116,7 @@ func parseNilan(topic string, payload []byte) {
 			"name":  matches[2]}
 
 		data := map[string]interface{}{
-			"value": strings.TrimSpace(string(payload))}
+			"value": payload}
 
 		point, _ := influx.NewPoint(
 			"nilan",
