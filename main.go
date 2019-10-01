@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -104,6 +105,8 @@ func parseNilan(topic string, payload []byte) {
 	r := regexp.MustCompile(`^[a-zA-Z0-9]*/(?P<group>[a-zA-Z0-9]*)/(?P<name>[a-zA-Z0-9_/]*)`)
 	matches := r.FindStringSubmatch(topic)
 
+	value, _ := strconv.ParseFloat(strings.TrimSpace(string(payload)), 32)
+
 	if len(matches) > 2 {
 		// skip if we get a text as influxdb cannot handle it
 		if matches[1] == "text" {
@@ -116,7 +119,7 @@ func parseNilan(topic string, payload []byte) {
 			"name":  matches[2]}
 
 		data := map[string]interface{}{
-			"value": payload}
+			"value": value}
 
 		point, _ := influx.NewPoint(
 			"nilan",
