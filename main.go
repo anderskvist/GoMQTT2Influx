@@ -94,10 +94,48 @@ func MonitorMQTT() {
 			parseSonoffPowR2(topic, payload)
 		case "nilan":
 			parseNilan(topic, payload)
+		case "zigbee2mqtt":
+			parseZigbee2mqtt(topic, payload)
 		default:
 		}
 		watchdog.Poke()
 	})
+}
+
+// output from https://github.com/jascdk/Nilan_Homeassistant
+func parseZigbee2mqtt(topic string, payload []byte) {
+	r := regexp.MustCompile(`^[a-zA-Z0-9]*/(?P<group>[a-zA-Z0-9]*)/(?P<name>[a-zA-Z0-9_/]*)`)
+	matches := r.FindStringSubmatch(topic)
+
+	if len(matches) > 2 {
+		// skip if we get a text as influxdb cannot handle it
+		if matches[1] == "bridge" {
+			log.Debug("Skipping bridge")
+			return
+		}
+
+		tags := map[string]string{
+			"group": matches[1],
+			"name":  matches[2]}
+
+		data := map[string]interface{}{}
+		json.Unmarshal([]byte(payload), &data)
+
+		point, _ := influx.NewPoint(
+			"zigbee2mqtt",
+			tags,
+			data,
+			time.Now(),
+		)
+		influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+			Database:  cfg.Section("influxdb").Key("database").String(),
+			Precision: "s",
+		})
+		influxBatchPoint.AddPoint(point)
+		if err := influxClient.Write(influxBatchPoint); err != nil {
+			log.Noticef("Error writing to influx: %s", err)
+		}
+	}
 }
 
 // output from https://github.com/jascdk/Nilan_Homeassistant
