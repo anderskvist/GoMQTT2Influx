@@ -114,8 +114,10 @@ func parseWatermeter(topic string, payload []byte) {
 		tags := map[string]string{
 			"name": matches[1]}
 
-		data := map[string]interface{}{}
-		json.Unmarshal([]byte(payload), &data)
+		value, _ := strconv.ParseFloat(strings.TrimSpace(string(payload)), 32)
+
+		data := map[string]interface{}{
+			"value": value}
 
 		point, _ := influx.NewPoint(
 			matches[1],
