@@ -115,6 +115,10 @@ func parseWatermeter(topic string, payload []byte) {
 			"name": matches[1]}
 
 		value, _ := strconv.ParseFloat(strings.TrimSpace(string(payload)), 32)
+		if value == 0 {
+			// We couldn't read the value correctly - just skip!
+			return
+		}
 
 		data := map[string]interface{}{
 			"value": value}
