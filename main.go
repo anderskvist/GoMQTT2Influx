@@ -96,10 +96,42 @@ func MonitorMQTT() {
 			parseNilan(topic, payload)
 		case "zigbee2mqtt":
 			parseZigbee2mqtt(topic, payload)
+		case "watermeter":
+			parseWatermeter(topic, payload)
+
 		default:
 		}
 		watchdog.Poke()
 	})
+}
+
+// output from watermeter
+func parseWatermeter(topic string, payload []byte) {
+	r := regexp.MustCompile(`^[a-zA-Z0-9]*/(?P<name>[a-zA-Z0-9]*)`)
+	matches := r.FindStringSubmatch(topic)
+
+	if len(matches) > 1 {
+		tags := map[string]string{
+			"name": matches[1]}
+
+		data := map[string]interface{}{}
+		json.Unmarshal([]byte(payload), &data)
+
+		point, _ := influx.NewPoint(
+			matches[1],
+			tags,
+			data,
+			time.Now(),
+		)
+		influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+			Database:  cfg.Section("influxdb").Key("database").String(),
+			Precision: "s",
+		})
+		influxBatchPoint.AddPoint(point)
+		if err := influxClient.Write(influxBatchPoint); err != nil {
+			log.Noticef("Error writing to influx: %s", err)
+		}
+	}
 }
 
 // output from https://github.com/jascdk/Nilan_Homeassistant
