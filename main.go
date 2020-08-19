@@ -118,10 +118,6 @@ func parseWunderground(topic string, payload []byte) {
 			"name":    matches[2]}
 
 		value, _ := strconv.ParseFloat(strings.TrimSpace(string(payload)), 32)
-		if value == 0 {
-			// We couldn't read the value correctly - just skip!
-			return
-		}
 
 		data := map[string]interface{}{
 			"value": value}
