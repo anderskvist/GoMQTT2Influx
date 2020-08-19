@@ -98,11 +98,49 @@ func MonitorMQTT() {
 			parseZigbee2mqtt(topic, payload)
 		case "watermeter":
 			parseWatermeter(topic, payload)
+		case "wunderground":
+			parseWunderground(topic, payload)
 
 		default:
 		}
 		watchdog.Poke()
 	})
+}
+
+// output from wunderground (https://github.com/anderskvist/GoWundergroundProxy)
+func parseWunderground(topic string, payload []byte) {
+	r := regexp.MustCompile(`^[a-zA-Z0-9]*/(?P<station>[a-zA-Z0-9]*)/(?P<name>[a-zA-Z0-9]*)`)
+	matches := r.FindStringSubmatch(topic)
+
+	if len(matches) > 1 {
+		tags := map[string]string{
+			"station": matches[1],
+			"name":    matches[2]}
+
+		value, _ := strconv.ParseFloat(strings.TrimSpace(string(payload)), 32)
+		if value == 0 {
+			// We couldn't read the value correctly - just skip!
+			return
+		}
+
+		data := map[string]interface{}{
+			"value": value}
+
+		point, _ := influx.NewPoint(
+			matches[1],
+			tags,
+			data,
+			time.Now(),
+		)
+		influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+			Database:  cfg.Section("influxdb").Key("database").String(),
+			Precision: "s",
+		})
+		influxBatchPoint.AddPoint(point)
+		if err := influxClient.Write(influxBatchPoint); err != nil {
+			log.Noticef("Error writing to influx: %s", err)
+		}
+	}
 }
 
 // output from watermeter
