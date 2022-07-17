@@ -119,10 +119,10 @@ func parseTasmotaDS18B20(topic string, payload []byte) {
 
 	tags := map[string]string{
 		"name":     sensor,
+		"id":       ds18b20Map["Id"].(string),
 		"tempunit": payloadMap["TempUnit"].(string)}
 
 	data := map[string]interface{}{
-		"id":          ds18b20Map["Id"].(string),
 		"temperature": ds18b20Map["Temperature"].(float64),
 	}
 
