@@ -100,11 +100,50 @@ func MonitorMQTT() {
 			parseWatermeter(topic, payload)
 		case "wunderground":
 			parseWunderground(topic, payload)
-
+		case "tasmota-ds18b20":
+			parseTasmotaDS18B20(topic, payload)
 		default:
 		}
 		watchdog.Poke()
 	})
+}
+
+func parseTasmotaDS18B20(topic string, payload []byte) {
+	r := regexp.MustCompile(`^tele/(?P<topic>[a-zA-Z0-9]*)/SENSOR`)
+	matches := r.FindStringSubmatch(topic)
+	sensor := matches[1]
+
+	var payloadMap map[string]interface{}
+	json.Unmarshal(payload, &payloadMap)
+	ds18b20Map := payloadMap["DS18B20"].(map[string]interface{})
+
+	tags := map[string]string{
+		"name":     sensor,
+		"tempunit": payloadMap["TempUnit"].(string)}
+
+	data := map[string]interface{}{
+		"id":          ds18b20Map["Id"].(string),
+		"temperature": ds18b20Map["Temperature"].(float64),
+	}
+
+	for k, v := range data {
+		log.Noticef("%s %s: %f\n", sensor, k, v)
+	}
+
+	point, _ := influx.NewPoint(
+		"DS18B20",
+		tags,
+		data,
+		time.Now(),
+	)
+	influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+		Database:  cfg.Section("influxdb").Key("database").String(),
+		Precision: "s",
+	})
+	influxBatchPoint.AddPoint(point)
+	if err := influxClient.Write(influxBatchPoint); err != nil {
+		log.Noticef("Error writing to influx: %s", err)
+	}
 }
 
 // output from wunderground (https://github.com/anderskvist/GoWundergroundProxy)
