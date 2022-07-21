@@ -102,10 +102,63 @@ func MonitorMQTT() {
 			parseWunderground(topic, payload)
 		case "tasmota-ds18b20":
 			parseTasmotaDS18B20(topic, payload)
+		case "tasmota-state-power":
+			parseTasmotaStatePower(topic, payload)
 		default:
 		}
 		watchdog.Poke()
 	})
+}
+
+func parseTasmotaStatePower(topic string, payload []byte) {
+	r := regexp.MustCompile(`^tele/(?P<topic>[a-zA-Z0-9]*)/STATE`)
+	matches := r.FindStringSubmatch(topic)
+	sensor := matches[1]
+
+	var payloadMap map[string]interface{}
+	json.Unmarshal(payload, &payloadMap)
+
+	var power int
+
+	if val, ok := payloadMap["POWER"]; ok {
+		if val == "ON" {
+			power = 1
+		} else if val == "OFF" {
+			power = 0
+		} else {
+			power = -1
+		}
+	} else {
+		log.Debugf("No POWER STATE in %s", topic)
+		return
+	}
+
+	tags := map[string]string{
+		"name": sensor,
+	}
+
+	data := map[string]interface{}{
+		"power": power,
+	}
+
+	for k, v := range data {
+		log.Noticef("%s %s: %f\n", sensor, k, v)
+	}
+
+	point, _ := influx.NewPoint(
+		"TasmotaStatePower",
+		tags,
+		data,
+		time.Now(),
+	)
+	influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+		Database:  cfg.Section("influxdb").Key("database").String(),
+		Precision: "s",
+	})
+	influxBatchPoint.AddPoint(point)
+	if err := influxClient.Write(influxBatchPoint); err != nil {
+		log.Noticef("Error writing to influx: %s", err)
+	}
 }
 
 func parseTasmotaDS18B20(topic string, payload []byte) {
