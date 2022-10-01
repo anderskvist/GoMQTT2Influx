@@ -104,6 +104,8 @@ func MonitorMQTT() {
 			parseTasmotaDS18B20(topic, payload)
 		case "tasmota-am2301":
 			parseTasmotaAM2301(topic, payload)
+		case "tasmota-analogsensor":
+			parseTasmotaAnalogSensor(topic, payload)
 		case "tasmota-state-power":
 			parseTasmotaStatePower(topic, payload)
 		default:
@@ -212,7 +214,6 @@ func parseTasmotaAM2301(topic string, payload []byte) {
 
 	tags := map[string]string{
 		"name":     sensor,
-		"id":       am2301Map["Id"].(string),
 		"tempunit": payloadMap["TempUnit"].(string)}
 
 	data := map[string]interface{}{
@@ -227,6 +228,43 @@ func parseTasmotaAM2301(topic string, payload []byte) {
 
 	point, _ := influx.NewPoint(
 		"AM2301",
+		tags,
+		data,
+		time.Now(),
+	)
+	influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+		Database:  cfg.Section("influxdb").Key("database").String(),
+		Precision: "s",
+	})
+	influxBatchPoint.AddPoint(point)
+	if err := influxClient.Write(influxBatchPoint); err != nil {
+		log.Noticef("Error writing to influx: %s", err)
+	}
+}
+
+func parseTasmotaAnalogSensor(topic string, payload []byte) {
+	r := regexp.MustCompile(`^tele/(?P<topic>[a-zA-Z0-9]*)/SENSOR`)
+	matches := r.FindStringSubmatch(topic)
+	sensor := matches[1]
+
+	var payloadMap map[string]interface{}
+	json.Unmarshal(payload, &payloadMap)
+	analogMap := payloadMap["ANALOG"].(map[string]interface{})
+
+	tags := map[string]string{
+		"name":     sensor,
+		"tempunit": payloadMap["TempUnit"].(string)}
+
+	data := map[string]interface{}{
+		"a0": analogMap["A0"].(int16),
+	}
+
+	for k, v := range data {
+		log.Noticef("%s %s: %f\n", sensor, k, v)
+	}
+
+	point, _ := influx.NewPoint(
+		"tasmotaanalogsensor",
 		tags,
 		data,
 		time.Now(),
