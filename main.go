@@ -252,11 +252,11 @@ func parseTasmotaAnalogSensor(topic string, payload []byte) {
 	analogMap := payloadMap["ANALOG"].(map[string]interface{})
 
 	tags := map[string]string{
-		"name":     sensor,
-		"tempunit": payloadMap["TempUnit"].(string)}
+		"name": sensor,
+	}
 
 	data := map[string]interface{}{
-		"a0": analogMap["A0"].(int16),
+		"a0": analogMap["A0"].(float64),
 	}
 
 	for k, v := range data {
