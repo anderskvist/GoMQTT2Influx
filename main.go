@@ -172,34 +172,42 @@ func parseTasmotaDS18B20(topic string, payload []byte) {
 
 	var payloadMap map[string]interface{}
 	json.Unmarshal(payload, &payloadMap)
-	ds18b20Map := payloadMap["DS18B20"].(map[string]interface{})
 
-	tags := map[string]string{
-		"name":     sensor,
-		"id":       ds18b20Map["Id"].(string),
-		"tempunit": payloadMap["TempUnit"].(string)}
+	for key, element := range payloadMap {
 
-	data := map[string]interface{}{
-		"temperature": ds18b20Map["Temperature"].(float64),
-	}
+		res := strings.HasPrefix(key, "DS18B20")
+		if res {
 
-	for k, v := range data {
-		log.Noticef("%s %s: %f\n", sensor, k, v)
-	}
+			ds18b20Map := element.(map[string]interface{})
 
-	point, _ := influx.NewPoint(
-		"DS18B20",
-		tags,
-		data,
-		time.Now(),
-	)
-	influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
-		Database:  cfg.Section("influxdb").Key("database").String(),
-		Precision: "s",
-	})
-	influxBatchPoint.AddPoint(point)
-	if err := influxClient.Write(influxBatchPoint); err != nil {
-		log.Noticef("Error writing to influx: %s", err)
+			tags := map[string]string{
+				"name":     sensor,
+				"id":       ds18b20Map["Id"].(string),
+				"tempunit": payloadMap["TempUnit"].(string)}
+
+			data := map[string]interface{}{
+				"temperature": ds18b20Map["Temperature"].(float64),
+			}
+
+			for k, v := range data {
+				log.Noticef("%s %s: %f\n", sensor, k, v)
+			}
+
+			point, _ := influx.NewPoint(
+				"DS18B20",
+				tags,
+				data,
+				time.Now(),
+			)
+			influxBatchPoint, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+				Database:  cfg.Section("influxdb").Key("database").String(),
+				Precision: "s",
+			})
+			influxBatchPoint.AddPoint(point)
+			if err := influxClient.Write(influxBatchPoint); err != nil {
+				log.Noticef("Error writing to influx: %s", err)
+			}
+		}
 	}
 }
 
