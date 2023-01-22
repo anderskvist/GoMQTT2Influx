@@ -77,7 +77,7 @@ func MonitorMQTT() {
 	}
 
 	if subConnection == nil {
-		subConnection = connect("MQTT2Influx-"+parser, uri)
+		subConnection = connect("tempMQTT2Influx-"+parser, uri)
 		log.Debug("Connecting to MQTT (sub)")
 	}
 
@@ -321,7 +321,7 @@ func parseWunderground(topic string, payload []byte) {
 
 // output from watermeter
 func parseWatermeter(topic string, payload []byte) {
-	r := regexp.MustCompile(`^[a-zA-Z0-9]*/(?P<name>[a-zA-Z0-9]*)`)
+	r := regexp.MustCompile(`^[a-zA-Z0-9]*/(?P<name>[a-zA-Z0-9]*)/([a-zA-Z0-9]*)/value`)
 	matches := r.FindStringSubmatch(topic)
 
 	if len(matches) > 1 {
