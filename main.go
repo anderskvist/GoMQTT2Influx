@@ -114,10 +114,26 @@ func MonitorMQTT() {
 	})
 }
 
-func parseTasmotaStatePower(topic string, payload []byte) {
-	r := regexp.MustCompile(`^tele/(?P<topic>[a-zA-Z0-9]*)/STATE`)
+func findStateName(topic string) string {
+	r := regexp.MustCompile(`^(tele/)?(?P<topic>[a-zA-Z0-9]*)/(tele/)?STATE`)
 	matches := r.FindStringSubmatch(topic)
-	sensor := matches[1]
+	index := r.SubexpIndex("topic")
+	sensor := matches[index]
+
+	return sensor
+}
+
+func findSensorName(topic string) string {
+	r := regexp.MustCompile(`^(tele/)?(?P<topic>[a-zA-Z0-9]*)/(tele/)?SENSOR`)
+	matches := r.FindStringSubmatch(topic)
+	index := r.SubexpIndex("topic")
+	sensor := matches[index]
+
+	return sensor
+}
+
+func parseTasmotaStatePower(topic string, payload []byte) {
+	sensor := findStateName(topic)
 
 	var payloadMap map[string]interface{}
 	json.Unmarshal(payload, &payloadMap)
@@ -166,9 +182,7 @@ func parseTasmotaStatePower(topic string, payload []byte) {
 }
 
 func parseTasmotaDS18B20(topic string, payload []byte) {
-	r := regexp.MustCompile(`^tele/(?P<topic>[a-zA-Z0-9]*)/SENSOR`)
-	matches := r.FindStringSubmatch(topic)
-	sensor := matches[1]
+	sensor := findSensorName(topic)
 
 	var payloadMap map[string]interface{}
 	json.Unmarshal(payload, &payloadMap)
@@ -212,9 +226,7 @@ func parseTasmotaDS18B20(topic string, payload []byte) {
 }
 
 func parseTasmotaAM2301(topic string, payload []byte) {
-	r := regexp.MustCompile(`^tele/(?P<topic>[a-zA-Z0-9]*)/SENSOR`)
-	matches := r.FindStringSubmatch(topic)
-	sensor := matches[1]
+	sensor := findSensorName(topic)
 
 	var payloadMap map[string]interface{}
 	json.Unmarshal(payload, &payloadMap)
@@ -251,9 +263,7 @@ func parseTasmotaAM2301(topic string, payload []byte) {
 }
 
 func parseTasmotaAnalogSensor(topic string, payload []byte) {
-	r := regexp.MustCompile(`^tele/(?P<topic>[a-zA-Z0-9]*)/SENSOR`)
-	matches := r.FindStringSubmatch(topic)
-	sensor := matches[1]
+	sensor := findSensorName(topic)
 
 	var payloadMap map[string]interface{}
 	json.Unmarshal(payload, &payloadMap)
@@ -486,9 +496,7 @@ func parseXiaomi(topic string, payload []byte) {
 }
 
 func parseSonoffPowR2(topic string, payload []byte) {
-	r := regexp.MustCompile(`^(?P<prefix>[a-zA-Z0-9]*)/.*`)
-	matches := r.FindStringSubmatch(topic)
-	sensor := matches[1]
+	sensor := findSensorName(topic)
 
 	var payloadMap map[string]interface{}
 	json.Unmarshal(payload, &payloadMap)
